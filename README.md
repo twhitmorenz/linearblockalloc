@@ -14,8 +14,32 @@ Allocation using the "linear block" algorithm, can be understood as allocating b
 
 Compared to HiLo, "linear block allocation" treats keyspace as the linear number-line it fundamentally is, rather than breaking it into a two-dimensional keyspace (the separate "hi" & "lo" words). Keeping NEXT_VAL the same type & magnitude as the actual keys simplifies maintenance, reduces multiplication to simple addition, and removes unnecessary complexity. There is no performance advantage or any other benefit to justify HiLo's more complicated number-space & design; it is merely a flawed concept rejected by Occam's razor.
 
-Configuration
+Usage
 -------------
+
+LinearBlockAllocator generator strategy is selected by class 'com.literatejava.hibernate.allocator.LinearBlockAllocator'. Most parameters default automatically -- unless you want to customize, you may not need to specify anything.
+
+Here's an example Hibernate XML mapping:
+
+    <class name="Customer" table="CUSTOMER">
+        <id name="id" column="ID" type="int">
+            <generator class="com.literatejava.hibernate.allocator.LinearBlockAllocator">
+                <param name="sequenceName">Customer</param>
+                <param name="blockSize">20</param>
+            </generator>
+        </id>
+    </class>
+
+You can also configure using annotations:
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "CustomerIdGenerator")
+    @GenericGenerator(name = "CustomerIdGenerator",
+            strategy = "com.literatejava.hibernate.allocator.LinearBlockAllocator",
+            parameters = {
+                @Parameter(name = "sequenceName", value = "Customer")
+            })
+    public int getId(){ return id;}
 
 LinearBlockAllocator is configured with two groups of parameters -- those defining the allocator table, and those selecting/controlling allocation for the specific sequence.
 
