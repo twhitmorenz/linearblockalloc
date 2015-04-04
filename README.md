@@ -1,5 +1,4 @@
-# linearblockalloc
-'Linear Block Allocator' for Hibernate – a superior &amp; portable alternative to Hi/Lo.
+'Linear Block Allocator' for Hibernate – a superior &amp; portable alternative to Hi/Lo
 =========
 
 This strategy is highly efficient, database-portable, and simplifies/ supersedes HiLo-type strategies. It allocates Long or Integer keys, using a portable table-based algorithm.
