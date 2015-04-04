@@ -35,7 +35,7 @@ Allocator table can contain multiple "allocation sequences", keyed by "name". Ma
 
 Block-size is the key parameter controlling performance. Larger block-sizes increase performance, at the expense of a slight increase in unused keys lost on server restart. Increasing the block-size to 200 achieve most of the performance benefits practically possible; entities/rows must still be INSERT'ed into the database.
 
-Database & Human-Friendly Keys
+Human-Friendly Keys & Database Modelling
 --------
 
 Database operation & maintenance are easy. With linear block allocation, "allocator state" and existing keys are always in direct correspondence. NEXT_VAL corresponds directly to MAX(existing keys); and must always be greater. Bulk inserts, validity checking or manual updates to the allocator are obvious & easy. Unlike Hi-Lo, tuning or changing block-size are possible without losing allocator position & database integrity. Since NEXT_VAL represents values directly (rather than via multiplier) changing block-size does not affect the next key to be allocated.
