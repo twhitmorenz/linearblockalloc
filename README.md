@@ -45,6 +45,6 @@ LinearBlockAllocator also generates better human-friendly keys. Block-sizes defa
 Performance & Requirements
 ------------
 
-Compared with vendor-specific strategies such as Oracle SEQUENCE, "LinearBlockAllocator" approaches double the performance (half the number of database operations per INSERT) in a completely portable & SQL-standard manner.
+Compared with vendor-specific strategies such as Oracle SEQUENCE, "LinearBlockAllocator" can achieve 100x or greater allocation performance (dependent on blocksize) & double the overall entity-insert performance. This is all achieved in a portable & SQL-standard manner.
 
-This allocator requires the ability to obtain a Session-independent connection to the database. This is possible under most common configurations where connection acquisition is under Hibernate control. If Hibernate is being driven with user-supplied connections, another generation strategy should be chosen.
+This allocator is compatible with most common Hibernate usages/ configurations, but the 'block' design does require the ability to obtain a Session-independent connection to the database. This is possible in all configurations where connection acquisition is under Hibernate control. If Hibernate is being driven with user-supplied connections, another generation strategy should be chosen.
