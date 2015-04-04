@@ -22,13 +22,17 @@ LinearBlockAllocator is configured with two groups of parameters -- those defini
 
 Allocator table definition:
 
-table -- allocator table to use, default "KEY_ALLOC"
-sequenceColumn -- sequence-name column, default "SEQ"
-allocColumn -- next-block column, default "NEXT_VAL "
+- table -- allocator table to use, default "KEY_ALLOC"
+- sequenceColumn -- sequence-name column, default "SEQ"
+- allocColumn -- next-block column, default "NEXT_VAL "
+
 Sequence selection:
-sequenceName -- sequence-name to use; defaults to table-name of the Hibernate entity
-blockSize -- block-size (# of keys) to cache in memory; default 20
+
+- sequenceName -- sequence-name to use; defaults to table-name of the Hibernate entity
+- blockSize -- block-size (# of keys) to cache in memory; default 20
+
 Allocator table can contain multiple "allocation sequences", keyed by "name". Many applications can use a single allocator table to store all their sequences. Each Hibernate generator is configured independently, so shared or independent allocator tables are equally able to be configured.
+
 Block-size is the key parameter controlling performance. Larger block-sizes increase performance, at the expense of a slight increase in unused keys lost on server restart. Increasing the block-size to 200 achieve most of the performance benefits practically possible; entities/rows must still be INSERT'ed into the database.
 
 Database & Human-Friendly Keys
