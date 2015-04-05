@@ -15,17 +15,25 @@ Allocation using the "linear block" algorithm, can be understood as allocating b
 Compared to HiLo, "linear block allocation" treats keyspace as the linear number-line it fundamentally is, rather than breaking it into a two-dimensional keyspace (the separate "hi" & "lo" words). Keeping NEXT_VAL the same type & magnitude as the actual keys simplifies maintenance, reduces multiplication to simple addition, and removes unnecessary complexity. There is no performance advantage or any other benefit to justify HiLo's more complicated number-space & design; it is merely a flawed concept rejected by Occam's razor.
 
 Usage & Configuration
--------------
+--------
 
-LinearBlockAllocator generator strategy is selected by class 'com.literatejava.hibernate.allocator.LinearBlockAllocator'. Most parameters default automatically -- unless you want to customize, you may not need to specify anything.
+LinearBlockAllocator generator strategy is selected by class 'com.literatejava.hibernate.allocator.LinearBlockAllocator'. Parameters are all defaulted automatically -- unless you want to customize, you may not need to specify anything.
 
 Here's an example Hibernate XML mapping:
 
     <class name="Customer" table="CUSTOMER">
         <id name="id" column="ID" type="int">
+            <generator class="com.literatejava.hibernate.allocator.LinearBlockAllocator" />
+        </id>
+    </class>
+
+You can also specify parameters to customize sequence key, block-size etc.
+
+    <class name="OrderLine" table="ORDERLINE">
+        <id name="id" column="ID" type="long">
             <generator class="com.literatejava.hibernate.allocator.LinearBlockAllocator">
-                <param name="sequenceName">Customer</param>
-                <param name="blockSize">20</param>
+                <param name="sequenceName">OrderLine</param>
+                <param name="blockSize">1000</param>
             </generator>
         </id>
     </class>
@@ -40,7 +48,7 @@ You can also configure using annotations:
                 @Parameter(name = "sequenceName", value = "Customer")
             })
 
-LinearBlockAllocator is configured with two groups of parameters -- those defining the allocator table, and those selecting/controlling allocation for the specific sequence.
+To customize LinearBlockAllocator, parameters can be considered in two groups -- those defining the allocator table, and those selecting/ controlling allocation for the specific sequence.
 
 Allocator table definition:
 
@@ -60,13 +68,16 @@ Block-size is the key parameter controlling performance. Larger block-sizes incr
 Human-Friendly Keys & Database Modelling
 --------
 
-Database operation & maintenance are easy. With linear block allocation, "allocator state" and existing keys are always in direct correspondence. NEXT_VAL corresponds directly to MAX(existing keys); and must always be greater. Bulk inserts, validity checking or manual updates to the allocator are obvious & easy. Unlike Hi-Lo, tuning or changing block-size are possible without losing allocator position & database integrity. Since NEXT_VAL represents values directly (rather than via multiplier) changing block-size does not affect the next key to be allocated.
+LinearBlockAllocator generates better, human-friendly keys. Block-sizes default to human-readable decimal-based (20, 100 etc) sizes -- there is no forced bias towards large binary numbers! Key wastage is decreased & restarting your server twice allocates customer=200, not customer=98304 :) Imagine how much easier development will be, without having to type stupid large ugly numbers for all keys.
 
-LinearBlockAllocator also generates better human-friendly keys. Block-sizes default to human-readable decimal-based (20, 100 etc) sizes -- there is no forced bias towards large binary numbers! Key wastage is decreased & restarting your server twice allocates customer=60, not customer=98304 :) Imagine how much easier development will be, without having to type stupid large ugly numbers for all keys.
+Database operation & maintenance are easy, too. With linear block allocation, "allocator state" and existing keys are always in direct correspondence. NEXT_VAL corresponds directly to MAX(existing keys); and must always be greater. Bulk inserts, validity checking or manual updates to the allocator are obvious & easy. 
+
+Unlike Hi-Lo, tuning or changing block-size are possible without losing allocator position & database integrity. Since NEXT_VAL represents values directly (rather than via multiplier) changing block-size does not affect the next key to be allocated. This makes it possible for stored procedures to use the allocator table, also.
+
 
 Performance & Requirements
 ------------
 
-Compared with vendor-specific strategies such as Oracle SEQUENCE, "LinearBlockAllocator" can achieve 100x or greater allocation performance (dependent on blocksize) & double the overall entity-insert performance. This is all achieved in a portable & SQL-standard manner.
+Compared with vendor-specific strategies such as Oracle SEQUENCE, "LinearBlockAllocator" can achieve anywhere upwards of 50x greater allocation performance, dependent on blocksize. This effectively doubles overall insertion performance; all achieved in a portable & SQL-standard manner.
 
-This allocator is compatible with most common Hibernate usages/ configurations, but the 'block' design does require the ability to obtain a Session-independent connection to the database. This is possible in all configurations where connection acquisition is under Hibernate control. If Hibernate is being driven with user-supplied connections, another generation strategy should be chosen.
+The allocator is compatible with most common Hibernate usages/ configurations, but the 'block' design does require the ability to obtain a Session-independent connection to the database. This is possible in all configurations where connection acquisition is under Hibernate control. If Hibernate is being driven with user-supplied connections, another generation strategy should be chosen.
