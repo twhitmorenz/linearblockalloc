@@ -26,32 +26,22 @@ package com.literatejava.hibernate.allocator;
  * Boston, MA  02110-1301  USA
  */
 
-import java.util.*;
 import java.io.Serializable;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
 import java.util.Properties;
 
-import org.hibernate.HibernateException;
-import org.hibernate.LockMode;
+import org.hibernate.*;
 import org.hibernate.cfg.ObjectNameNormalizer;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.internal.FormatStyle;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.engine.spi.SessionImplementor;
-//import org.hibernate.engine.SessionImplementor;
-//import org.hibernate.engine.TransactionHelper;
 import org.hibernate.id.*;
 import org.hibernate.internal.util.config.ConfigurationHelper;
-import org.hibernate.jdbc.*;
-//import org.hibernate.jdbc.util.FormatStyle;
+import org.hibernate.jdbc.AbstractReturningWork;
 import org.hibernate.mapping.Table;
 import org.hibernate.type.Type;
-//import org.hibernate.util.PropertiesHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -213,7 +203,8 @@ public class LinearBlockAllocator
         }
 
         // build SQL strings;
-        //      --
+        //      -- use appendLockHint(LockMode) for now, as that is how Hibernate's generators do it.
+        //
         this.query = "select " + allocColumn + 
                 " from " + dialect.appendLockHint( LockMode.PESSIMISTIC_WRITE, tableName) + 
                 " where " + sequenceColumn + " = ?" + 
@@ -260,8 +251,8 @@ public class LinearBlockAllocator
         }
 
         // answer Result, as correct type;
-        //      -- use one single mutable instance 'Result Holder' instance as our Factory;
-        //      -- 
+        //      -- use one single mutable instance 'Result Holder' instance as our Factory.
+        //      
         resultFactory.initialize( result);
         Number resultVal = resultFactory.makeValue();
         //

@@ -48,13 +48,10 @@
                 TODO REVIEW.
       -->
     </dependency>
-    
-    <!--  Slf4j;  runtime dependency, don't force our version on others. -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>${slf4j.version}</version>
-      <scope>runtime</scope>
     </dependency>
 
 

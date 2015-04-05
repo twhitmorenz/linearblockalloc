@@ -26,50 +26,24 @@ package com.literatejava.hibernate.allocator;
  * Boston, MA  02110-1301  USA
  */
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-//import org.hibernate.testing.junit.functional.FunctionalTestCase;
-//import org.hibernate.testing.junit.functional.FunctionalTestClassTestSuite;
-import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.cfg.Environment;
-import org.hibernate.dialect.Oracle9iDialect;
-import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.Session;
+import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.testing.junit4.BaseCoreFunctionalTestCase;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.literatejava.hibernate.allocator.LinearBlockAllocator;
-
-import static org.hibernate.id.IdentifierGeneratorHelper.BasicHolder;
-
-public class LinearBlockAllocator_FunctionalTest extends FunctionalTestCase {
+public class LinearBlockAllocator_FunctionalTest extends BaseCoreFunctionalTestCase {
     
     private static final Logger log = LoggerFactory.getLogger( LinearBlockAllocator_FunctionalTest.class );
 
     
-    static {
-        defaultProperty( "jdbc.driver", "org.h2.Driver");
-        defaultProperty( "jdbc.isolation", "");
-        defaultProperty( Environment.DIALECT, "org.hibernate.dialect.H2Dialect");
-        defaultProperty( "hibernate.connection.username", "sa");
-        defaultProperty( "hibernate.connection.url", "jdbc:h2:mem:db1;DB_CLOSE_DELAY=-1;MVCC=TRUE");
-        
-        
-    }
-    
-    protected static void defaultProperty (String key, String value) {
-        if (System.getProperty( key) == null) {
-            System.setProperty( key, value);
-        }
-    }
-    
-    
-    
-    
-	public LinearBlockAllocator_FunctionalTest(String string) {
-		super( string );
-	}
 
 	
 	public String[] getMappings() {
@@ -79,13 +53,6 @@ public class LinearBlockAllocator_FunctionalTest extends FunctionalTestCase {
         return "com/literatejava/hibernate/";
     }
 
-
-	
-	public static Test suite() {
-		return new FunctionalTestClassTestSuite( LinearBlockAllocator_FunctionalTest.class );
-	}
-
-	
 	
 	// ----------------------------------------------------------------------------------
 
@@ -97,9 +64,10 @@ public class LinearBlockAllocator_FunctionalTest extends FunctionalTestCase {
 	 *         - basic functional test,  
 	 *         - use a distinct entity (EntityA) to ensure allocated IDs are as expected.
 	 */
+	@Test
 	public void testBlockAllocation() {
-		EntityPersister persister = sfi().getEntityPersister( EntityA.class.getName() );
-		assertClassAssignability( LinearBlockAllocator.class, persister.getIdentifierGenerator().getClass() );
+		EntityPersister persister = sessionFactory().getEntityPersister( EntityA.class.getName() );
+		assertTrue( persister.getIdentifierGenerator() instanceof LinearBlockAllocator);
 		LinearBlockAllocator generator = (LinearBlockAllocator) persister.getIdentifierGenerator();
 
 		int count = 20;
@@ -144,9 +112,10 @@ public class LinearBlockAllocator_FunctionalTest extends FunctionalTestCase {
      *         - concurrent functional test,  verify unique IDs allocated under concurrent use.
      *         - use a distinct entity (EntityB) to avoid affecting BasicAllocation test's expectations.
      */
+    @Test
     public void testConcurrentAllocation() throws InterruptedException {
-        EntityPersister persister = sfi().getEntityPersister( EntityB.class.getName() );
-        assertClassAssignability( LinearBlockAllocator.class, persister.getIdentifierGenerator().getClass() );
+        EntityPersister persister = sessionFactory().getEntityPersister( EntityA.class.getName() );
+        assertTrue( persister.getIdentifierGenerator() instanceof LinearBlockAllocator);
         LinearBlockAllocator generator = (LinearBlockAllocator) persister.getIdentifierGenerator();
 
         final int THREADS = 4;
@@ -198,8 +167,8 @@ public class LinearBlockAllocator_FunctionalTest extends FunctionalTestCase {
     
     
     protected Set<Long> performAllocationOnThread (int count) {
-        // ENG NOTE -- don't call 'openSession()';  as that method assigns Session thru a shared field, vulnerable to answering same Session to different threads.
-        Session s = getSessions().openSession();
+        // ENG NOTE -- don't call 'this.openSession()';  that method assigns Session thru a shared field, vulnerable to answering same Session to different threads.
+        Session s = sessionFactory().openSession();
         s.beginTransaction();
         
         EntityB[] entities = new EntityB[count];

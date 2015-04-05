@@ -26,39 +26,34 @@ package com.literatejava.hibernate.allocator;
  * Boston, MA  02110-1301  USA
  */
 
-import static org.junit.Assert.*;
-//import static junit.framework.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.Serializable;
 import java.sql.*;
-import java.util.*;
-
-import junit.framework.TestCase;
+import java.util.Properties;
 
 import org.hibernate.cfg.*;
-//import org.hibernate.connection.ConnectionProvider;
-import org.hibernate.dialect.*;
-import org.hibernate.engine.jdbc.spi.JdbcConnectionAccess;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.Oracle9iDialect;
+import org.hibernate.engine.jdbc.spi.*;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.transaction.spi.*;
-//import org.hibernate.engine.SessionFactoryImplementor;
-//import org.hibernate.engine.SessionImplementor;
 import org.hibernate.id.PersistentIdentifierGenerator;
 import org.hibernate.jdbc.*;
-//import org.hibernate.impl.SessionFactoryImpl;
+import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.type.IntegerType;
+import org.junit.*;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import com.literatejava.hibernate.allocator.LinearBlockAllocator;
-
-import static org.mockito.Mockito.*;
 
 
-
-public class LinearBlockAllocator_MockedJdbcTest extends TestCase {
+public class LinearBlockAllocator_MockedJdbcTest {
 
     
     
@@ -69,8 +64,8 @@ public class LinearBlockAllocator_MockedJdbcTest extends TestCase {
 
 
     
-    @Override
-    protected void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         this.dialect = new Oracle9iDialect();
     }
 
@@ -133,11 +128,11 @@ public class LinearBlockAllocator_MockedJdbcTest extends TestCase {
         when( connectionAccess.obtainConnection()).thenReturn( connection);
         
         
+        
         // mock 'Work in Transaction' infrastructure..
-        //      EARLY..
-        //
-//        long allocated = session.getTransactionCoordinator().getTransaction().createIsolationDelegate().delegateWork( 
-//                work, true);
+        //      eg.   long allocated = session.getTransactionCoordinator().getTransaction().createIsolationDelegate().delegateWork( 
+        //                  work, true);
+        //      --
         TransactionCoordinator transactionCoordinator = mock( TransactionCoordinator.class);
         when( sessionImpl.getTransactionCoordinator()).thenReturn( transactionCoordinator);
         //
@@ -157,7 +152,6 @@ public class LinearBlockAllocator_MockedJdbcTest extends TestCase {
                         return work.execute( conn);
                     }
                 });
-//        TransactionCoordinator().getTransaction().createIsolationDelegate()        
         //
         when( isolationDelegate.delegateWork( Matchers.any(WorkExecutorVisitable.class), Matchers.anyBoolean())).thenAnswer( 
                 new Answer<Long>() {
@@ -169,6 +163,24 @@ public class LinearBlockAllocator_MockedJdbcTest extends TestCase {
                 });
         
         
+        // mock SessionFactory -> SQL Logger;
+        //      eg.   final SqlStatementLogger statementLogger = session
+        //                    .getFactory()
+        //                    .getServiceRegistry()
+        //                    .getService( JdbcServices.class )
+        //                    .getSqlStatementLogger();
+        //      --
+        ServiceRegistryImplementor serviceRegistryImplementor = mock(ServiceRegistryImplementor.class);
+        when( sessionFactoryImpl.getServiceRegistry()).thenReturn( serviceRegistryImplementor);
+        //
+        JdbcServices jdbcServices = mock(JdbcServices.class);
+        when( serviceRegistryImplementor.getService( JdbcServices.class)).thenReturn( jdbcServices);
+        //
+        SqlStatementLogger sqlStatementLogger = new SqlStatementLogger();       // actual, not a mock.
+        when( jdbcServices.getSqlStatementLogger()).thenReturn( sqlStatementLogger);
+
+                
+                
         // done.
     }
     
@@ -183,8 +195,8 @@ public class LinearBlockAllocator_MockedJdbcTest extends TestCase {
 
     
     
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
     }
 
     
@@ -196,6 +208,7 @@ public class LinearBlockAllocator_MockedJdbcTest extends TestCase {
 
 
     
+    @Test
     public void testConfiguration_Parameters() {
         Properties params = new Properties();
         params.setProperty("table", "TEST_ALLOC_TABLE");
@@ -245,6 +258,7 @@ public class LinearBlockAllocator_MockedJdbcTest extends TestCase {
     
     
     
+    @Test
     public void testGenerate() throws SQLException {
         createAllocator();
         setupMockSession();
