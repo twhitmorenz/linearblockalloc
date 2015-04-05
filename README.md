@@ -38,7 +38,7 @@ You can also specify parameters to customize sequence key, block-size etc.
         </id>
     </class>
 
-You can also configure using annotations:
+Configuring with annotations:
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "CustomerIdGenerator")
