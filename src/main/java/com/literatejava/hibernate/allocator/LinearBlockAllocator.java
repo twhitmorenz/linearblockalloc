@@ -39,13 +39,19 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.cfg.ObjectNameNormalizer;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.SessionImplementor;
-import org.hibernate.engine.TransactionHelper;
+import org.hibernate.engine.jdbc.internal.FormatStyle;
+import org.hibernate.engine.jdbc.spi.JdbcServices;
+import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
+import org.hibernate.engine.spi.SessionImplementor;
+//import org.hibernate.engine.SessionImplementor;
+//import org.hibernate.engine.TransactionHelper;
 import org.hibernate.id.*;
-import org.hibernate.jdbc.util.FormatStyle;
+import org.hibernate.internal.util.config.ConfigurationHelper;
+import org.hibernate.jdbc.*;
+//import org.hibernate.jdbc.util.FormatStyle;
 import org.hibernate.mapping.Table;
 import org.hibernate.type.Type;
-import org.hibernate.util.PropertiesHelper;
+//import org.hibernate.util.PropertiesHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,7 +128,8 @@ import org.slf4j.LoggerFactory;
  * @author Hibernate implementation of this algorithm includes code adapted from Hibernate sources/ Gavin King, (c) 2008 Red Hat Middleware LLC.
  */
 
-public class LinearBlockAllocator extends TransactionHelper
+public class LinearBlockAllocator 
+    /*extends TransactionHelper*/
     implements PersistentIdentifierGenerator, Configurable 
     {
 
@@ -180,18 +187,18 @@ public class LinearBlockAllocator extends TransactionHelper
     public void configure (Type type, Properties params, Dialect dialect) {
         ObjectNameNormalizer normalizer = (ObjectNameNormalizer) params.get( IDENTIFIER_NORMALIZER);
         
-        this.tableName =        PropertiesHelper.getString( ALLOC_TABLE, params, DEFAULT_TABLE);
-        this.sequenceColumn =   PropertiesHelper.getString( SEQUENCE_COLUMN, params, DEFAULT_SEQUENCE_COLUMN);
-        this.allocColumn =      PropertiesHelper.getString( ALLOC_COLUMN, params, DEFAULT_ALLOC_COLUMN);
+        this.tableName =        ConfigurationHelper.getString( ALLOC_TABLE, params, DEFAULT_TABLE);
+        this.sequenceColumn =   ConfigurationHelper.getString( SEQUENCE_COLUMN, params, DEFAULT_SEQUENCE_COLUMN);
+        this.allocColumn =      ConfigurationHelper.getString( ALLOC_COLUMN, params, DEFAULT_ALLOC_COLUMN);
         
         // get SequenceName;    default to Entities' TableName.
         //      -
-        this.sequenceName =     PropertiesHelper.getString( SEQUENCE_NAME, params, params.getProperty(PersistentIdentifierGenerator.TABLE));
+        this.sequenceName =     ConfigurationHelper.getString( SEQUENCE_NAME, params, params.getProperty(PersistentIdentifierGenerator.TABLE));
         if (sequenceName == null) {
             throw new IdentifierGenerationException( "LinearBlockAllocator: '"+SEQUENCE_NAME+"' must be specified");
         }
         
-        this.blockSize = PropertiesHelper.getInt( BLOCK_SIZE, params, DEFAULT_BLOCK_SIZE);
+        this.blockSize = ConfigurationHelper.getInt( BLOCK_SIZE, params, DEFAULT_BLOCK_SIZE);
         if (blockSize < 1) {
             blockSize = 1;
         }
@@ -226,6 +233,10 @@ public class LinearBlockAllocator extends TransactionHelper
     }
 
     
+    // ----------------------------------------------------------------------------------
+
+    
+    
     
     /** allocate a Key;
      *      - 
@@ -235,7 +246,9 @@ public class LinearBlockAllocator extends TransactionHelper
         if (allocNext >= allocHi) {
             if (log.isDebugEnabled())
                 log.debug( "allocating id block: " + tableName + ", " + sequenceName + ": blockSize=" + blockSize);
-            long allocated = ((Long) doWorkInNewTransaction( session)).longValue();
+
+            long allocated = allocateBlock( session);
+            //
             this.allocNext = allocated;
             this.allocHi = allocated + blockSize;
             if (log.isDebugEnabled())
@@ -257,67 +270,73 @@ public class LinearBlockAllocator extends TransactionHelper
 
 
     
-    // ----------------------------------------------------------------------------------
     
-    
-    
-    
-    /** allocate a Block;
-     *      - answers the Low (starting number) of resulting block.
-     */
-    @Override
-    public Serializable doWorkInCurrentTransaction (Connection conn, String sql) throws SQLException {
-        long result;
-        int rows;
-        do {
-            // The loop ensures atomicity of the
-            // select + update even for no transaction
-            // or read committed isolation level
-
-            sql = query;
-            SQL_STATEMENT_LOGGER.logStatement( query, FormatStyle.BASIC);
-            PreparedStatement qps = conn.prepareStatement( query);
-            try {
-                qps.setString( 1, sequenceName);
-                ResultSet rs = qps.executeQuery();
-                if (!rs.next()) {
-                    String err = "could not read a hi value - you need to populate the table: " + tableName + ", " + sequenceName;
-                    log.error( err);
-                    throw new IdentifierGenerationException( err);
-                }
-                result = rs.getLong( 1);
-                rs.close();
-            } catch (SQLException sqle) {
-                log.error( "could not read a hi value", sqle);
-                throw sqle;
-            } finally {
-                qps.close();
-            }
-
-            sql = update;
-            SQL_STATEMENT_LOGGER.logStatement( update, FormatStyle.BASIC);
-            PreparedStatement ups = conn.prepareStatement( update);
-            try {
-                ups.setLong( 1, result + blockSize);
-                ups.setString( 2, sequenceName);
-                ups.setLong( 3, result);
-                rows = ups.executeUpdate();
-            } catch (SQLException sqle) {
-                log.error( "could not update hi value in: " + tableName, sqle);
-                throw sqle;
-            } finally {
-                ups.close();
-            }
-        } while (rows == 0);
+    protected long allocateBlock (final SessionImplementor session) {
+        AbstractReturningWork<Long> work = new AbstractReturningWork<Long>() {
+            @Override
+            public Long execute (Connection conn) throws SQLException {
+                final SqlStatementLogger statementLogger = session
+                        .getFactory()
+                        .getServiceRegistry()
+                        .getService( JdbcServices.class )
+                        .getSqlStatementLogger();
+                
+                long result;
+                int rows;
+                do {
+                    // The loop ensures atomicity of the
+                    // select + update even for no transaction
+                    // or read committed isolation level
         
+                    statementLogger.logStatement( query, FormatStyle.BASIC.getFormatter());
+                    PreparedStatement qps = conn.prepareStatement( query);
+                    try {
+                        qps.setString( 1, sequenceName);
+                        ResultSet rs = qps.executeQuery();
+                        if (!rs.next()) {
+                            String err = "could not read a hi value - you need to populate the table: " + tableName + ", " + sequenceName;
+                            log.error( err);
+                            throw new IdentifierGenerationException( err);
+                        }
+                        result = rs.getLong( 1);
+                        rs.close();
+                    } catch (SQLException sqle) {
+                        log.error( "could not read a hi value", sqle);
+                        throw sqle;
+                    } finally {
+                        qps.close();
+                    }
         
-        // success;
-        //      -- allocated a Block.
-        //
-        statisticsTableAccessCount++;
-        return new Long( result);
+                    statementLogger.logStatement( update, FormatStyle.BASIC.getFormatter());
+                    PreparedStatement ups = conn.prepareStatement( update);
+                    try {
+                        ups.setLong( 1, result + blockSize);
+                        ups.setString( 2, sequenceName);
+                        ups.setLong( 3, result);
+                        rows = ups.executeUpdate();
+                    } catch (SQLException sqle) {
+                        log.error( "could not update hi value in: " + tableName, sqle);
+                        throw sqle;
+                    } finally {
+                        ups.close();
+                    }
+                } while (rows == 0);
+                
+                
+                // success;
+                //      -- allocated a Block.
+                //
+                statisticsTableAccessCount++;
+                return new Long( result);
+            }
+        };
+        
+        // perform in an isolated Transaction.
+        long allocated = session.getTransactionCoordinator().getTransaction().createIsolationDelegate().delegateWork( 
+                work, true);
+        return allocated;
     }
-
+    
     
     
     

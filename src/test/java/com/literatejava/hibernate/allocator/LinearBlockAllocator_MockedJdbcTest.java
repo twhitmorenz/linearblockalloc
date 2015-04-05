@@ -33,15 +33,22 @@ import java.sql.*;
 import java.util.*;
 
 import org.hibernate.cfg.*;
-import org.hibernate.connection.ConnectionProvider;
+//import org.hibernate.connection.ConnectionProvider;
 import org.hibernate.dialect.*;
-import org.hibernate.engine.SessionFactoryImplementor;
-import org.hibernate.engine.SessionImplementor;
+import org.hibernate.engine.jdbc.spi.JdbcConnectionAccess;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.transaction.spi.*;
+//import org.hibernate.engine.SessionFactoryImplementor;
+//import org.hibernate.engine.SessionImplementor;
 import org.hibernate.id.PersistentIdentifierGenerator;
-import org.hibernate.impl.SessionFactoryImpl;
+import org.hibernate.jdbc.*;
+//import org.hibernate.impl.SessionFactoryImpl;
 import org.hibernate.type.IntegerType;
 import org.junit.*;
 import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import com.literatejava.hibernate.allocator.LinearBlockAllocator;
 
@@ -106,19 +113,58 @@ public class LinearBlockAllocator_MockedJdbcTest {
         //
         SessionFactoryImplementor sessionFactoryImpl = mock( SessionFactoryImplementor.class);
         when( sessionImpl.getFactory()).thenReturn( sessionFactoryImpl);
-        
-        // mock SessionFactoryImpl -> TransactionManager;
-        when( sessionFactoryImpl.getTransactionManager()).thenReturn( null);
-        
-        // mock SessionFactoryImpl -> ConnectionProvider;
-        //      --
-        ConnectionProvider connectionProvider = mock( ConnectionProvider.class);
-        when( sessionFactoryImpl.getConnectionProvider()).thenReturn( connectionProvider);
 
-        // mock ConnectionProvider -> Connection.
+        // QUICK OUT;
+//        // mock SessionFactoryImpl -> TransactionManager;
+//        when( sessionFactoryImpl.getTransactionManager()).thenReturn( null);
+        
+        // mock SessionImpl -> JdbcConnection Access;
+        //      --
+        JdbcConnectionAccess connectionAccess = mock( JdbcConnectionAccess.class);
+        when( sessionImpl.getJdbcConnectionAccess()).thenReturn( connectionAccess);
+//        ConnectionProvider connectionProvider = mock( ConnectionProvider.class);
+//        when( sessionFactoryImpl.getConnectionProvider()).thenReturn( connectionProvider);
+
+        // mock JdbcConnectionAccess -> Connection.
         //      --
         this.connection = mock( Connection.class);
-        when( connectionProvider.getConnection()).thenReturn( connection);
+        when( connectionAccess.obtainConnection()).thenReturn( connection);
+        
+        
+        // mock 'Work in Transaction' infrastructure..
+        //      EARLY..
+        //
+//        long allocated = session.getTransactionCoordinator().getTransaction().createIsolationDelegate().delegateWork( 
+//                work, true);
+        TransactionCoordinator transactionCoordinator = mock( TransactionCoordinator.class);
+        when( sessionImpl.getTransactionCoordinator()).thenReturn( transactionCoordinator);
+        //
+        TransactionImplementor transactionImpl = mock( TransactionImplementor.class);
+        when( transactionCoordinator.getTransaction()).thenReturn( transactionImpl);
+        //
+        IsolationDelegate isolationDelegate = mock( IsolationDelegate.class);
+        when( transactionImpl.createIsolationDelegate()).thenReturn( isolationDelegate);
+        //
+        final WorkExecutor<Long> workExecutor  = mock( WorkExecutor.class);
+        when( workExecutor.executeReturningWork( Matchers.any(ReturningWork.class), Matchers.any(Connection.class))).thenAnswer(
+                new Answer<Long>() {
+                    public Long answer (InvocationOnMock invocation) throws SQLException {
+                        Object[] args = invocation.getArguments();
+                        ReturningWork<Long> work = (ReturningWork<Long>) args[0];
+                        Connection conn = (Connection) args[1];
+                        return work.execute( conn);
+                    }
+                });
+//        TransactionCoordinator().getTransaction().createIsolationDelegate()        
+        //
+        when( isolationDelegate.delegateWork( Matchers.any(WorkExecutorVisitable.class), Matchers.anyBoolean())).thenAnswer( 
+                new Answer<Long>() {
+                    public Long answer (InvocationOnMock invocation) throws SQLException {
+                        Object[] args = invocation.getArguments();
+                        WorkExecutorVisitable<Long> work = (WorkExecutorVisitable<Long>) args[0];
+                        return work.accept( workExecutor, connection);      // use same Connection for testing
+                    }
+                });
         
         
         // done.
@@ -156,7 +202,7 @@ public class LinearBlockAllocator_MockedJdbcTest {
         params.setProperty("allocColumn", "TEST_NEXTVAL");
                       
         params.setProperty("sequenceName", "TestSeq");
-        params.setProperty("blockSize", "100");           
+        params.setProperty("blockSize", "500");           
         params.put(
                 PersistentIdentifierGenerator.IDENTIFIER_NORMALIZER,
                 new ObjectNameNormalizer() {
@@ -189,7 +235,7 @@ public class LinearBlockAllocator_MockedJdbcTest {
         assertTrue( sqlRow.contains("TEST_SEQ"));
         assertTrue( sqlRow.contains("TEST_NEXTVAL"));
         assertTrue( sqlRow.contains("'TestSeq'"));
-        assertTrue( sqlRow.contains("100"));
+        assertTrue( sqlRow.contains("500"));
         
 
         // pass.
