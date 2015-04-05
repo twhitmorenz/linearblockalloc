@@ -29,8 +29,6 @@ package com.literatejava.hibernate.allocator;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import junit.framework.Test;
-
 //import org.hibernate.testing.junit.functional.FunctionalTestCase;
 //import org.hibernate.testing.junit.functional.FunctionalTestClassTestSuite;
 import org.hibernate.persister.entity.EntityPersister;

@@ -27,10 +27,13 @@ package com.literatejava.hibernate.allocator;
  */
 
 import static org.junit.Assert.*;
+//import static junit.framework.Assert.*;
 
 import java.io.Serializable;
 import java.sql.*;
 import java.util.*;
+
+import junit.framework.TestCase;
 
 import org.hibernate.cfg.*;
 //import org.hibernate.connection.ConnectionProvider;
@@ -45,7 +48,6 @@ import org.hibernate.id.PersistentIdentifierGenerator;
 import org.hibernate.jdbc.*;
 //import org.hibernate.impl.SessionFactoryImpl;
 import org.hibernate.type.IntegerType;
-import org.junit.*;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -56,7 +58,7 @@ import static org.mockito.Mockito.*;
 
 
 
-public class LinearBlockAllocator_MockedJdbcTest {
+public class LinearBlockAllocator_MockedJdbcTest extends TestCase {
 
     
     
@@ -67,8 +69,8 @@ public class LinearBlockAllocator_MockedJdbcTest {
 
 
     
-    @Before
-    public void setUp() throws Exception {
+    @Override
+    protected void setUp() throws Exception {
         this.dialect = new Oracle9iDialect();
     }
 
@@ -181,8 +183,8 @@ public class LinearBlockAllocator_MockedJdbcTest {
 
     
     
-    @After
-    public void tearDown () throws Exception {
+    @Override
+    protected void tearDown() throws Exception {
     }
 
     
@@ -194,7 +196,6 @@ public class LinearBlockAllocator_MockedJdbcTest {
 
 
     
-    @Test
     public void testConfiguration_Parameters() {
         Properties params = new Properties();
         params.setProperty("table", "TEST_ALLOC_TABLE");
@@ -244,7 +245,6 @@ public class LinearBlockAllocator_MockedJdbcTest {
     
     
     
-    @Test
     public void testGenerate() throws SQLException {
         createAllocator();
         setupMockSession();
