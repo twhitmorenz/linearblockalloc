@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
  *      <li>Keys are allocated in blocks from an "allocator" table, with a current block held in memory;  used by the application as required.
  *      <li>Default block-size of 20 outperforms SEQUENCE allocation by a factor of 10 or more, using only standard SQL &amp; fully portable
  *              between databases.
- *      <li>Block allocation is multiuser & cluster-safe;  database contention is handled by retry.
+ *      <li>Block allocation is multiuser &amp; cluster-safe;  database contention is handled by retry.
  *      <li>This allocator requires the ability to obtain a Session-independent connection to the database. This is
  *          possible under most common configurations where connection acquisition is under Hibernate control. If
  *          Hibernate is being driven with user-supplied connections, another generation strategy should be chosen.
@@ -71,9 +71,9 @@ import org.slf4j.LoggerFactory;
  * <p>
  * 
  * Compared to HiLo, "linear block allocation" treats keyspace as the linear number-line it fundamentally is, rather than breaking
- * it into a two-dimensional keyspace (the separate "hi" & "lo" words). Keeping NEXT_VAL the same type &amp; magnitude as the actual keys
+ * it into a two-dimensional keyspace (the separate "hi" &amp; "lo" words). Keeping NEXT_VAL the same type &amp; magnitude as the actual keys
  * simplifies maintenance, reduces multiplication to simple addition, and removes unnecessary complexity. There is no performance advantage or 
- * any other benefit to justify HiLo's more complicated number-space &amp design; it is merely a flawed concept rejected by Occam's razor.
+ * any other benefit to justify HiLo's more complicated number-space &amp; design; it is merely a flawed concept rejected by Occam's razor.
  * <p>
  * 
  * Database operation &amp; maintenance are easy. With linear block allocation, "allocator state" and existing keys are always in direct correspondence.
@@ -119,7 +119,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @see TableHiLoGenerator
  * @author Tom Whitmore
- * @author Hibernate 'generator' implementation of this algorithm includes code adapted from Hibernate sources: http://hibernate.org/orm/ (c)
+ * @author Hibernate implementation of this algorithm includes code adapted from Hibernate sources/ Gavin King, (c) 2008 Red Hat Middleware LLC.
  */
 
 public class LinearBlockAllocator extends TransactionHelper
@@ -135,7 +135,7 @@ public class LinearBlockAllocator extends TransactionHelper
     public static final String SEQUENCE_NAME =      "sequenceName";
     public static final String BLOCK_SIZE =         "blockSize";
 
-    /** default Table & Column names */
+    /** default Table &amp; Column names */
     public static final String DEFAULT_TABLE =              "KEY_ALLOC";
     public static final String DEFAULT_SEQUENCE_COLUMN =    "SEQ";
     public static final String DEFAULT_ALLOC_COLUMN =       "NEXT_VAL";
