@@ -4,7 +4,7 @@
 
   <groupId>com.literatejava</groupId>
   <artifactId>linear-block-allocator</artifactId>
-  <version>4.2.0-early2</version>
+  <version>4.2.0-RC1</version>
   <packaging>jar</packaging>
 
   <name>Linear Block Allocator</name>
