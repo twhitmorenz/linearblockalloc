@@ -4,7 +4,7 @@
 
   <groupId>com.literatejava</groupId>
   <artifactId>linear-block-allocator</artifactId>
-  <version>4.2.0-SNAPSHOT</version>
+  <version>4.2.0-early2</version>
   <packaging>jar</packaging>
 
   <name>Linear Block Allocator</name>
@@ -21,10 +21,14 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- Full compatibility Hibernate 4.2, 4.3;  
+      -     - runtime functionality also compatible Hibernate 4.0/ 4.1,  but tests seem to be missing some Apache commons-logging 'test' dependencies absent from HB.
+     -->    
     <hibernate.version>4.2.0.Final</hibernate.version>
     <!-- according to Hibernate -->
     <junit.version>4.10</junit.version>
-    <slf4j.version>1.6.1</slf4j.version>
+    <log4j.version>1.2.16</log4j.version>
   </properties>
 
   <dependencyManagement>
@@ -45,13 +49,7 @@
       <version>${hibernate.version}</version>
       
       <!-- REVIEW: does 'hibernate-core' still bring in non-convergent 'slf4j' dependency? 
-                TODO REVIEW.
       -->
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
     </dependency>
 
 
@@ -75,9 +73,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
-      <version>${slf4j.version}</version>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>${log4j.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -91,6 +89,7 @@
       <version>3.12.0.GA</version>
       <scope>test</scope>
     </dependency>
+    
   </dependencies>
 
   <profiles>
@@ -136,6 +135,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
+          <version>2.5.1</version>
           <configuration>
             <source>1.6</source>
             <target>1.6</target>
