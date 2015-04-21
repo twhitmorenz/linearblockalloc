@@ -118,9 +118,9 @@ import org.jboss.logging.Logger;
  */
 
 public class LinearBlockAllocator 
-    /*extends TransactionHelper*/
-    implements PersistentIdentifierGenerator, Configurable 
-    {
+/*extends TransactionHelper*/
+implements PersistentIdentifierGenerator, Configurable 
+{
 
 
     /* COLUMN and TABLE should be renamed but it would break the public API */
@@ -138,10 +138,10 @@ public class LinearBlockAllocator
     public static final int    DEFAULT_BLOCK_SIZE =         100;
     /** internal defaults */
     private static final int DEFAULT_SEQUENCE_COLUMNLENGTH = 128;
-    
 
 
-  
+
+
     // - DB configuration
     protected String    tableName;
     protected String    sequenceColumn;
@@ -161,7 +161,7 @@ public class LinearBlockAllocator
     protected long allocNext;
     protected long allocHi;
     protected IntegralDataTypeHolder resultFactory;
-    
+
     // - statistics;  mainly for unit testing.
     protected long statisticsTableAccessCount;
 
@@ -175,24 +175,24 @@ public class LinearBlockAllocator
 
     public void configure (Type type, Properties params, Dialect dialect) {
         ObjectNameNormalizer normalizer = (ObjectNameNormalizer) params.get( IDENTIFIER_NORMALIZER);
-        
+
         this.tableName =        ConfigurationHelper.getString( ALLOC_TABLE, params, DEFAULT_TABLE);
         this.sequenceColumn =   ConfigurationHelper.getString( SEQUENCE_COLUMN, params, DEFAULT_SEQUENCE_COLUMN);
         this.allocColumn =      ConfigurationHelper.getString( ALLOC_COLUMN, params, DEFAULT_ALLOC_COLUMN);
-        
+
         // get SequenceName;    default to Entities' TableName.
         //      -
         this.sequenceName =     ConfigurationHelper.getString( SEQUENCE_NAME, params, params.getProperty(PersistentIdentifierGenerator.TABLE));
         if (sequenceName == null) {
             throw new IdentifierGenerationException( "LinearBlockAllocator: '"+SEQUENCE_NAME+"' must be specified");
         }
-        
+
         this.blockSize = ConfigurationHelper.getInt( BLOCK_SIZE, params, DEFAULT_BLOCK_SIZE);
         if (blockSize < 1) {
             blockSize = 1;
         }
 
-        
+
         // qualify Table Name, if necessary;
         //      --
         if (tableName.indexOf( '.') < 0) {
@@ -211,23 +211,23 @@ public class LinearBlockAllocator
         this.update = "update " + tableName + 
                 " set " + allocColumn + " = ? where " + sequenceColumn + " = ? and " + allocColumn + " = ?";
 
-        
+
         // setup Return Type & Result Holder.
         //      --
         this.returnType = type;
         this.returnClass = type.getReturnedClass();
         this.resultFactory = IdentifierGeneratorHelper.getIntegralDataTypeHolder( returnClass);
-        
-        
+
+
         // done.
     }
 
-    
+
     // ----------------------------------------------------------------------------------
 
-    
-    
-    
+
+
+
     /** allocate a Key;
      *      - 
      */
@@ -259,8 +259,8 @@ public class LinearBlockAllocator
     }
 
 
-    
-    
+
+
     protected long allocateBlock (final SessionImplementor session) {
         AbstractReturningWork<Long> work = new AbstractReturningWork<Long>() {
             @Override
@@ -270,14 +270,14 @@ public class LinearBlockAllocator
                         .getServiceRegistry()
                         .getService( JdbcServices.class )
                         .getSqlStatementLogger();
-                
+
                 long result;
                 int rows;
                 do {
                     // The loop ensures atomicity of the
                     // select + update even for no transaction
                     // or read committed isolation level
-        
+
                     statementLogger.logStatement( query, FormatStyle.BASIC.getFormatter());
                     PreparedStatement qps = conn.prepareStatement( query);
                     try {
@@ -296,7 +296,7 @@ public class LinearBlockAllocator
                     } finally {
                         qps.close();
                     }
-        
+
                     statementLogger.logStatement( update, FormatStyle.BASIC.getFormatter());
                     PreparedStatement ups = conn.prepareStatement( update);
                     try {
@@ -311,8 +311,8 @@ public class LinearBlockAllocator
                         ups.close();
                     }
                 } while (rows == 0);
-                
-                
+
+
                 // success;
                 //      -- allocated a Block.
                 //
@@ -320,23 +320,23 @@ public class LinearBlockAllocator
                 return new Long( result);
             }
         };
-        
+
         // perform in an isolated Transaction.
         long allocated = session.getTransactionCoordinator().getTransaction().createIsolationDelegate().delegateWork( 
                 work, true);
         return allocated;
     }
-    
-    
-    
-    
+
+
+
+
     // ----------------------------------------------------------------------------------
 
 
 
 
 
-    
+
     public String[] sqlCreateStrings (Dialect dialect) throws HibernateException 
     {
         // create Sequence Table
@@ -362,28 +362,28 @@ public class LinearBlockAllocator
         return new String[]{ dropSequence};
     }
 
-    
+
     public Object generatorKey() {
         return "LinearBlockAllocator table="+tableName+", seq="+sequenceName;
     }
 
 
 
-    
+
     // ----------------------------------------------------------------------------------
 
 
 
 
 
-    
+
     /** Statistics;  Table Access Count.
      * @return 
      */
     public long getStats_TableAccessCount() {
         return statisticsTableAccessCount;
     }
-    
+
 
 
 }

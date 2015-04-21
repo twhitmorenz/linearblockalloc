@@ -18,7 +18,7 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-  
+
   <developers>
     <developer>
       <name>Tom Whitmore</name>
@@ -27,7 +27,7 @@
       <organizationUrl>http://literatejava.com</organizationUrl>
     </developer>
   </developers>
-  
+
   <scm>
     <connection>scm:git:git@github.com:twhitmorenz/linearblockalloc.git</connection>
     <developerConnection>scm:git:git@github.com:twhitmorenz/linearblockalloc.git</developerConnection>
@@ -38,13 +38,13 @@
       <id>ossrh</id>
       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
-  </distributionManagement>  
+  </distributionManagement>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <!-- Runtime Compatible with Hibernate 4.0.x thru 4.3.x;    unit-tests require 'hibernate-testing' 4.2.x or greater.
-     -->    
+    <!-- Runtime Compatible with Hibernate 4.0.x thru 4.3.x; unit-tests require 
+      'hibernate-testing' 4.2.x or greater. -->
     <hibernate.version>4.2.0.Final</hibernate.version>
     <!-- according to Hibernate -->
     <junit.version>4.10</junit.version>
@@ -67,7 +67,8 @@
       <groupId>org.hibernate</groupId>
       <artifactId>hibernate-core</artifactId>
       <version>${hibernate.version}</version>
-      <!-- REVIEW: does 'hibernate-core' still bring in non-convergent 'slf4j' dependency? -->
+      <!-- REVIEW: does 'hibernate-core' still bring in non-convergent 'slf4j' 
+        dependency? -->
     </dependency>
 
 
@@ -107,7 +108,7 @@
       <version>3.12.0.GA</version>
       <scope>test</scope>
     </dependency>
-    
+
   </dependencies>
 
   <profiles>
@@ -133,9 +134,8 @@
         <jdbc.isolation />
       </properties>
     </profile>
-    <!-- artefact signing for upload to Sonatype Central Repository. 
-      -     - configure in USER_HOME\.m2\settings.xml
-     -->
+    <!-- artefact signing for upload to Sonatype Central Repository. - - 
+      configure in USER_HOME\.m2\settings.xml -->
     <profile>
       <id>ossrh</id>
       <activation>
@@ -148,94 +148,94 @@
   </profiles>
 
   <build>
-      <defaultGoal>install</defaultGoal>
-      
-      <resources>
-        <resource>
-            <directory>src/test/java</directory>
-            <filtering>false</filtering>
-             <includes>
-               <include>**/*.hbm.xml</include>
-            </includes>
-            <targetPath>${basedir}/target/test-classes/</targetPath>
-        </resource>
-      </resources>
+    <defaultGoal>install</defaultGoal>
 
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>2.5.1</version>
-          <configuration>
-            <source>1.6</source>
-            <target>1.6</target>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-source-plugin</artifactId>
-          <version>2.2.1</version>
-          <executions>
-            <execution>
-              <id>attach-sources</id>
-              <goals>
-                <goal>jar-no-fork</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <version>2.9.1</version>
-          <executions>
-            <execution>
-              <id>attach-javadocs</id>
-              <goals>
-                <goal>jar</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-    
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-gpg-plugin</artifactId>
-          <version>1.5</version>
-          <executions>
-            <execution>
-              <id>sign-artifacts</id>
-              <phase>verify</phase>
-              <goals>
-                <goal>sign</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-        
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-release-plugin</artifactId>
-          <version>2.5</version>
-          <configuration>
-            <autoVersionSubmodules>true</autoVersionSubmodules>
-            <useReleaseProfile>false</useReleaseProfile>
-            <releaseProfiles>release</releaseProfiles>
-            <goals>deploy</goals>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.sonatype.plugins</groupId>
-          <artifactId>nexus-staging-maven-plugin</artifactId>
-          <version>1.6.3</version>
-          <extensions>true</extensions>
-          <configuration>
-            <serverId>ossrh</serverId>
-            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-            <autoReleaseAfterClose>false</autoReleaseAfterClose>
-          </configuration>
-        </plugin>        
-      </plugins>
+    <resources>
+      <resource>
+        <directory>src/test/java</directory>
+        <filtering>false</filtering>
+        <includes>
+          <include>**/*.hbm.xml</include>
+        </includes>
+        <targetPath>${basedir}/target/test-classes/</targetPath>
+      </resource>
+    </resources>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.5.1</version>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>2.2.1</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.9.1</version>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>1.5</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-release-plugin</artifactId>
+        <version>2.5</version>
+        <configuration>
+          <autoVersionSubmodules>true</autoVersionSubmodules>
+          <useReleaseProfile>false</useReleaseProfile>
+          <releaseProfiles>release</releaseProfiles>
+          <goals>deploy</goals>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <version>1.6.3</version>
+        <extensions>true</extensions>
+        <configuration>
+          <serverId>ossrh</serverId>
+          <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+          <autoReleaseAfterClose>false</autoReleaseAfterClose>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
-    
+
 </project>
