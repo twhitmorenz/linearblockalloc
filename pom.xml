@@ -37,8 +37,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <!-- Runtime Compatible with Hibernate 4.0.x thru 4.3.x;  
-      -     - unit-tests require 'hibernate-testing' 4.2.x or greater,  due to some Apache commons-logging 'test' dependencies.
+    <!-- Runtime Compatible with Hibernate 4.0.x thru 4.3.x;    unit-tests require 'hibernate-testing' 4.2.x or greater.
      -->    
     <hibernate.version>4.2.0.Final</hibernate.version>
     <!-- according to Hibernate -->
