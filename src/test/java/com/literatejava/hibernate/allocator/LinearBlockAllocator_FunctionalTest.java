@@ -113,12 +113,7 @@ public class LinearBlockAllocator_FunctionalTest extends BaseCoreFunctionalTestC
      */
     @Test
     public void testIndependentOfTransaction() {
-        EntityPersister persister = sessionFactory().getEntityPersister( EntityA.class.getName() );
-        assertTrue( persister.getIdentifierGenerator() instanceof LinearBlockAllocator);
-        LinearBlockAllocator generator = (LinearBlockAllocator) persister.getIdentifierGenerator();
         
-        
-
         // allocate in TX, but then rollback;
         //      --
         Session s = openSession();
@@ -168,10 +163,6 @@ public class LinearBlockAllocator_FunctionalTest extends BaseCoreFunctionalTestC
      */
     @Test
     public void testConcurrentAllocation() throws InterruptedException {
-        EntityPersister persister = sessionFactory().getEntityPersister( EntityA.class.getName() );
-        assertTrue( persister.getIdentifierGenerator() instanceof LinearBlockAllocator);
-        LinearBlockAllocator generator = (LinearBlockAllocator) persister.getIdentifierGenerator();
-
         final int THREADS = 4;
         final int ENTITIES_PER_THREAD  = 1000;
 
