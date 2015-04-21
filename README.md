@@ -81,3 +81,8 @@ Performance & Requirements
 Compared with vendor-specific strategies such as Oracle SEQUENCE, "LinearBlockAllocator" can achieve anywhere upwards of 50x greater allocation performance, dependent on blocksize. This effectively doubles overall insertion performance; all achieved in a portable & SQL-standard manner.
 
 The allocator is compatible with most common Hibernate usages/ configurations, but the 'block' design does require the ability to obtain a Session-independent connection to the database. This is possible in all configurations where connection acquisition is under Hibernate control. If Hibernate is being driven with user-supplied connections, another generation strategy should be chosen.
+
+Hibernate 4.x Compatible
+------------
+
+Linear Block Allocator 4.2.0 is fully compatible with Hibernate 4.2, 4.3 etc. This version is also 'feature compatible' with older Hibernate 4.0 and 4.1 versions, but unit-tests require extra Maven dependencies not correctly provided by Hibernate.

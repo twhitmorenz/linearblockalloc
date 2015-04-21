@@ -35,13 +35,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.hibernate.Session;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.testing.junit4.BaseCoreFunctionalTestCase;
+import org.jboss.logging.Logger;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class LinearBlockAllocator_FunctionalTest extends BaseCoreFunctionalTestCase {
     
-    private static final Logger log = LoggerFactory.getLogger( LinearBlockAllocator_FunctionalTest.class );
+    private static final Logger log = Logger.getLogger( LinearBlockAllocator_FunctionalTest.class);
 
     
 
@@ -107,6 +106,56 @@ public class LinearBlockAllocator_FunctionalTest extends BaseCoreFunctionalTestC
 
 
 
+    /** test Independent of Transaction/ Rollback;
+     *         - key allocation is expected to be in independent Transaction,
+     *         - key allocation should survive rollback. 
+     *         - use a distinct entity (EntityB) to avoid affecting BasicAllocation test's expectations.
+     */
+    @Test
+    public void testIndependentOfTransaction() {
+        
+        // allocate in TX, but then rollback;
+        //      --
+        Session s = openSession();
+        s.beginTransaction();
+        //
+        EntityA entity1 = new EntityA("to be rolled back");
+        assertTrue( entity1.getId() == null);
+        s.save(entity1);
+        assertTrue( entity1.getId() != 0);
+        //
+        s.getTransaction().rollback();
+
+        
+        // allocate again.
+        //
+        s.beginTransaction();
+        //
+        EntityA entity2 = new EntityA("to be commited");
+        assertTrue( entity2.getId() == null);
+        s.save(entity2);
+        assertTrue( entity2.getId() != 0);
+        //
+        s.getTransaction().commit();
+        s.close();
+        
+        
+        // E1.Id must be != E2.Id.
+        //
+        assertTrue( entity1.getId() != entity2.getId());
+        
+        
+        // pass.
+    }
+
+    
+    
+    // ----------------------------------------------------------------------------------
+
+
+
+
+
     
     /** test Concurrent Allocation;     
      *         - concurrent functional test,  verify unique IDs allocated under concurrent use.
@@ -114,10 +163,6 @@ public class LinearBlockAllocator_FunctionalTest extends BaseCoreFunctionalTestC
      */
     @Test
     public void testConcurrentAllocation() throws InterruptedException {
-        EntityPersister persister = sessionFactory().getEntityPersister( EntityA.class.getName() );
-        assertTrue( persister.getIdentifierGenerator() instanceof LinearBlockAllocator);
-        LinearBlockAllocator generator = (LinearBlockAllocator) persister.getIdentifierGenerator();
-
         final int THREADS = 4;
         final int ENTITIES_PER_THREAD  = 1000;
 

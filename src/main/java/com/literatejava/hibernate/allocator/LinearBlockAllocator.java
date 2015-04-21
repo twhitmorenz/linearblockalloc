@@ -42,8 +42,7 @@ import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.jdbc.AbstractReturningWork;
 import org.hibernate.mapping.Table;
 import org.hibernate.type.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 
 
@@ -167,7 +166,7 @@ public class LinearBlockAllocator
     protected long statisticsTableAccessCount;
 
     // -
-    private static final Logger log = LoggerFactory.getLogger( LinearBlockAllocator.class);
+    private static final Logger log = Logger.getLogger( LinearBlockAllocator.class);
 
 
 
