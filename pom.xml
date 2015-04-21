@@ -4,7 +4,7 @@
 
   <groupId>com.literatejava</groupId>
   <artifactId>linear-block-allocator</artifactId>
-  <version>3.6.10-SNAPSHOT</version>
+  <version>3.6.10</version>
   <packaging>jar</packaging>
 
   <name>Linear Block Allocator</name>
@@ -18,6 +18,27 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
+
+  <developers>
+    <developer>
+      <name>Tom Whitmore</name>
+      <email>tom@literatejava.com</email>
+      <organization>LiterateJava.com</organization>
+      <organizationUrl>http://literatejava.com</organizationUrl>
+    </developer>
+  </developers>
+  
+  <scm>
+    <connection>scm:git:git@github.com:twhitmorenz/linearblockalloc.git</connection>
+    <developerConnection>scm:git:git@github.com:twhitmorenz/linearblockalloc.git</developerConnection>
+    <url>git@github.com:twhitmorenz/linearblockalloc.git</url>
+  </scm>
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>  
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -46,12 +67,11 @@
       <!-- NOTE: 'hibernate-core' brings in a non-convergent dependency on slf4j-api, 1.5.8 vs 1.6.1. -->
     </dependency>
     
-    <!--  Slf4j;  runtime dependency, don't force our version on others. -->
+    <!--  Slf4j;  used by Hibernate 3.6. -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>${slf4j.version}</version>
-      <scope>runtime</scope>
     </dependency>
 
 
@@ -94,7 +114,7 @@
   </dependencies>
 
   <profiles>
-    <!-- 'h2'; test against an in-memory H2 database. - as per hibernate-3.6.10/hibernate-parent/pom.xml. -->
+    <!-- 'h2'; test against an in-memory H2 database; as per hibernate-parent/pom.xml. -->
     <profile>
       <id>h2</id>
       <activation>
@@ -116,50 +136,97 @@
         <jdbc.isolation />
       </properties>
     </profile>
+    <!-- artefact signing for upload to Sonatype Central Repository. 
+      -     - configure in USER_HOME\.m2\settings.xml
+     -->
+    <profile>
+      <id>ossrh</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <gpg.executable>gpg</gpg.executable>
+      </properties>
+    </profile>
   </profiles>
 
-    <build>
-        <defaultGoal>install</defaultGoal>
-        
-        <resources>
-          <resource>
-              <directory>src/test/java</directory>
-              <filtering>false</filtering>
-               <includes>
-                 <include>**/*.hbm.xml</include>
-              </includes>
-              <targetPath>${basedir}/target/test-classes/</targetPath>
-          </resource>
-        </resources>
+  <build>
+    <defaultGoal>install</defaultGoal>
 
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <executions>
-              <execution>
-                <phase>deploy</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-javadoc-plugin</artifactId>
-              <version>2.5</version>
-          </plugin>
-          
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>2.0-beta-9</version>
-                <configuration>
-                    <autoVersionSubmodules>true</autoVersionSubmodules>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+    <resources>
+      <resource>
+        <directory>src/test/java</directory>
+        <filtering>false</filtering>
+        <includes>
+          <include>**/*.hbm.xml</include>
+        </includes>
+        <targetPath>${basedir}/target/test-classes/</targetPath>
+      </resource>
+    </resources>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.5.1</version>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>2.2.1</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.9.1</version>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>1.5</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <version>1.6.3</version>
+        <extensions>true</extensions>
+        <configuration>
+          <serverId>ossrh</serverId>
+          <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+          <autoReleaseAfterClose>false</autoReleaseAfterClose>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
     
 </project>
