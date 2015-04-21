@@ -4,7 +4,7 @@
 
   <groupId>com.literatejava</groupId>
   <artifactId>linear-block-allocator</artifactId>
-  <version>4.3.0-SNAPSHOT</version>
+  <version>4.0.0</version>
   <packaging>jar</packaging>
 
   <name>Linear Block Allocator</name>
@@ -18,6 +18,21 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
+  
+  <developers>
+    <developer>
+      <name>Tom Whitmore</name>
+      <email>tom@literatejava.com</email>
+      <organization>LiterateJava.com</organization>
+      <organizationUrl>http://literatejava.com</organizationUrl>
+    </developer>
+  </developers>
+  
+  <scm>
+    <connection>scm:git:git@github.com:twhitmorenz/linearblockalloc.git</connection>
+    <developerConnection>scm:git:git@github.com:twhitmorenz/linearblockalloc.git</developerConnection>
+    <url>git@github.com:twhitmorenz/linearblockalloc.git</url>
+  </scm>   
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -25,7 +40,7 @@
     <!-- Runtime Compatible with Hibernate 4.0.x thru 4.3.x;  
       -     - unit-tests require 'hibernate-testing' 4.2.x or greater,  due to some Apache commons-logging 'test' dependencies.
      -->    
-    <hibernate.version>4.3.0.Final</hibernate.version>
+    <hibernate.version>4.2.0.Final</hibernate.version>
     <!-- according to Hibernate -->
     <junit.version>4.10</junit.version>
     <log4j.version>1.2.16</log4j.version>
@@ -47,9 +62,7 @@
       <groupId>org.hibernate</groupId>
       <artifactId>hibernate-core</artifactId>
       <version>${hibernate.version}</version>
-      
-      <!-- REVIEW: does 'hibernate-core' still bring in non-convergent 'slf4j' dependency? 
-      -->
+      <!-- REVIEW: does 'hibernate-core' still bring in non-convergent 'slf4j' dependency? -->
     </dependency>
 
 
@@ -89,10 +102,11 @@
       <version>3.12.0.GA</version>
       <scope>test</scope>
     </dependency>
+    
   </dependencies>
 
   <profiles>
-    <!-- 'h2'; test against an in-memory H2 database. - as per hibernate-3.6.10/hibernate-parent/pom.xml. -->
+    <!-- 'h2'; test against an in-memory H2 database; as per hibernate-parent/pom.xml. -->
     <profile>
       <id>h2</id>
       <activation>
@@ -112,6 +126,16 @@
         <jdbc.user>sa</jdbc.user>
         <jdbc.pass />
         <jdbc.isolation />
+      </properties>
+    </profile>
+    <!-- artefact signing for upload to Sonatype Central Repository. -->
+    <profile>
+      <id>artefact_signing</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <gpg.executable>gpg</gpg.executable>
       </properties>
     </profile>
   </profiles>
@@ -152,10 +176,20 @@
             </execution>
           </executions>
         </plugin>
+
         <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-javadoc-plugin</artifactId>
-            <version>2.5</version>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-gpg-plugin</artifactId>
+          <version>1.5</version>
+          <executions>
+            <execution>
+              <id>sign-artifacts</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>sign</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
         
         <plugin>
