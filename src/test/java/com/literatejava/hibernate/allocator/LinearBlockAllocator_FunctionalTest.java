@@ -39,67 +39,67 @@ import org.jboss.logging.Logger;
 import org.junit.Test;
 
 public class LinearBlockAllocator_FunctionalTest extends BaseCoreFunctionalTestCase {
-    
+
     private static final Logger log = Logger.getLogger( LinearBlockAllocator_FunctionalTest.class);
 
-    
 
-	
-	public String[] getMappings() {
-	    return new String[] { "allocator/Basic.hbm.xml" };
-	}
+
+
+    public String[] getMappings() {
+        return new String[] { "allocator/Basic.hbm.xml" };
+    }
     public String getBaseForMappings() {
         return "com/literatejava/hibernate/";
     }
 
-	
-	// ----------------------------------------------------------------------------------
+
+    // ----------------------------------------------------------------------------------
 
 
 
 
 
-	/** test Block Allocation;     
-	 *         - basic functional test,  
-	 *         - use a distinct entity (EntityA) to ensure allocated IDs are as expected.
-	 */
-	@Test
-	public void testBlockAllocation() {
-		EntityPersister persister = sessionFactory().getEntityPersister( EntityA.class.getName() );
-		assertTrue( persister.getIdentifierGenerator() instanceof LinearBlockAllocator);
-		LinearBlockAllocator generator = (LinearBlockAllocator) persister.getIdentifierGenerator();
+    /** test Block Allocation;     
+     *         - basic functional test,  
+     *         - use a distinct entity (EntityA) to ensure allocated IDs are as expected.
+     */
+    @Test
+    public void testBlockAllocation() {
+        EntityPersister persister = sessionFactory().getEntityPersister( EntityA.class.getName() );
+        assertTrue( persister.getIdentifierGenerator() instanceof LinearBlockAllocator);
+        LinearBlockAllocator generator = (LinearBlockAllocator) persister.getIdentifierGenerator();
 
-		int count = 20;
-		long START_FROM = 10;
-		
-		EntityA[] entities = new EntityA[count];
-		Session s = openSession();
-		s.beginTransaction();
-		
-		for ( int i = 0; i < count; i++ ) {
+        int count = 20;
+        long START_FROM = 10;
+
+        EntityA[] entities = new EntityA[count];
+        Session s = openSession();
+        s.beginTransaction();
+
+        for ( int i = 0; i < count; i++ ) {
             String name = "entity " + (i + 1);
-			entities[i] = new EntityA( name);
-			s.save( entities[i] );
-			long expectedId = START_FROM + i;
-			assertEquals( expectedId, entities[i].getId().longValue() );
-		}
-		s.getTransaction().commit();
+            entities[i] = new EntityA( name);
+            s.save( entities[i] );
+            long expectedId = START_FROM + i;
+            assertEquals( expectedId, entities[i].getId().longValue() );
+        }
+        s.getTransaction().commit();
 
-		assertEquals( 2, generator.getStats_TableAccessCount());
-		
-		s.beginTransaction();
-		for ( int i = 0; i < count; i++ ) {
-			assertEquals( i + START_FROM, entities[i].getId().intValue() );
-			s.delete( entities[i] );
-		}
-		s.getTransaction().commit();
-		s.close();
-		
-		// pass.
-	}
+        assertEquals( 2, generator.getStats_TableAccessCount());
 
-    
-    
+        s.beginTransaction();
+        for ( int i = 0; i < count; i++ ) {
+            assertEquals( i + START_FROM, entities[i].getId().intValue() );
+            s.delete( entities[i] );
+        }
+        s.getTransaction().commit();
+        s.close();
+
+        // pass.
+    }
+
+
+
     // ----------------------------------------------------------------------------------
 
 
@@ -113,7 +113,7 @@ public class LinearBlockAllocator_FunctionalTest extends BaseCoreFunctionalTestC
      */
     @Test
     public void testIndependentOfTransaction() {
-        
+
         // allocate in TX, but then rollback;
         //      --
         Session s = openSession();
@@ -126,7 +126,7 @@ public class LinearBlockAllocator_FunctionalTest extends BaseCoreFunctionalTestC
         //
         s.getTransaction().rollback();
 
-        
+
         // allocate again.
         //
         s.beginTransaction();
@@ -138,25 +138,25 @@ public class LinearBlockAllocator_FunctionalTest extends BaseCoreFunctionalTestC
         //
         s.getTransaction().commit();
         s.close();
-        
-        
+
+
         // E1.Id must be != E2.Id.
         //
         assertTrue( entity1.getId() != entity2.getId());
-        
-        
+
+
         // pass.
     }
 
-    
-    
+
+
     // ----------------------------------------------------------------------------------
 
 
 
 
 
-    
+
     /** test Concurrent Allocation;     
      *         - concurrent functional test,  verify unique IDs allocated under concurrent use.
      *         - use a distinct entity (EntityB) to avoid affecting BasicAllocation test's expectations.
@@ -168,7 +168,7 @@ public class LinearBlockAllocator_FunctionalTest extends BaseCoreFunctionalTestC
 
         final Set<Long> unionIds = Collections.synchronizedSet( new TreeSet<Long>());
         final AtomicInteger totalCount = new AtomicInteger(0);
-        
+
 
         class AllocationWork implements Runnable {
             public void run() {
@@ -181,7 +181,7 @@ public class LinearBlockAllocator_FunctionalTest extends BaseCoreFunctionalTestC
             }
         };
 
-        
+
         // run Threaded Allocation; 
         //      --
         //
@@ -198,40 +198,40 @@ public class LinearBlockAllocator_FunctionalTest extends BaseCoreFunctionalTestC
         }
         log.info("threaded allocation complete.");
 
-        
+
         // assert no conflicts.
         //      -
         int expectedTotal = THREADS * ENTITIES_PER_THREAD;
         assertEquals( expectedTotal, unionIds.size());
         assertEquals( expectedTotal, totalCount.get());
-        
-        
+
+
         // done.
     }
 
-    
-    
+
+
     protected Set<Long> performAllocationOnThread (int count) {
         // ENG NOTE -- don't call 'this.openSession()';  that method assigns Session thru a shared field, vulnerable to answering same Session to different threads.
         Session s = sessionFactory().openSession();
         s.beginTransaction();
-        
+
         EntityB[] entities = new EntityB[count];
         Set<Long> allocatedIds = new TreeSet<Long>();
-        
+
         for ( int i = 0; i < count; i++ ) {
             String name = "entity " + (i + 1);
             entities[i] = new EntityB( name);
             s.save( entities[i]);
-            
+
             allocatedIds.add( entities[i].getId());
         }
-        
+
         s.getTransaction().commit();
         s.close();
-        
+
         return allocatedIds;
     }
-    
-	
+
+
 }
