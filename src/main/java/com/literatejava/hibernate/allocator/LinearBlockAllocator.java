@@ -116,7 +116,7 @@ import org.jboss.logging.Logger;
  * <p>
  * 
  * 
- * @see TableHiLoGenerator
+ * @see MultipleHiLoPerTableGenerator
  * @author Tom Whitmore
  * @author Hibernate implementation of this algorithm includes code adapted from Hibernate sources/ Gavin King, (c) 2008 Red Hat Middleware LLC.
  */
@@ -466,7 +466,7 @@ implements PersistentIdentifierGenerator, Configurable
 
 
     /** Statistics;  Table Access Count.
-     * @return 
+     * @return number of table accesses
      */
     public long getStats_TableAccessCount() {
         return statisticsTableAccessCount;
