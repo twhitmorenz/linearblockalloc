@@ -4,7 +4,7 @@
 
   <groupId>com.literatejava</groupId>
   <artifactId>linear-block-allocator</artifactId>
-  <version>4.0.0</version>
+  <version>5.0.0-Beta1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Linear Block Allocator</name>
@@ -43,12 +43,12 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <!-- Runtime Compatible with Hibernate 4.0.x thru 4.3.x; unit-tests require 
-      'hibernate-testing' 4.2.x or greater. -->
-    <hibernate.version>4.2.0.Final</hibernate.version>
+    <!-- Hibernate 5.0.0 beta 1.
+     -->
+    <hibernate.version>5.0.0.Beta1</hibernate.version>
     <!-- according to Hibernate -->
-    <junit.version>4.10</junit.version>
-    <log4j.version>1.2.16</log4j.version>
+    <junit.version>4.11</junit.version>
+    <log4j.version>1.2.17</log4j.version>
   </properties>
 
   <dependencyManagement>
@@ -167,8 +167,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>2.5.1</version>
         <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
+          <source>1.8</source>
+          <target>1.8</target>
         </configuration>
       </plugin>
       <plugin>

@@ -31,17 +31,21 @@ import java.sql.*;
 import java.util.Properties;
 
 import org.hibernate.*;
-import org.hibernate.cfg.ObjectNameNormalizer;
+import org.hibernate.boot.model.naming.Identifier;
+import org.hibernate.boot.model.naming.ObjectNameNormalizer;
+import org.hibernate.boot.model.relational.*;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.internal.FormatStyle;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
+import org.hibernate.engine.spi.SessionEventListenerManager;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.id.*;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.jdbc.AbstractReturningWork;
-import org.hibernate.mapping.Table;
-import org.hibernate.type.Type;
+import org.hibernate.mapping.*;
+import org.hibernate.type.*;
 import org.jboss.logging.Logger;
 
 
@@ -152,6 +156,8 @@ implements PersistentIdentifierGenerator, Configurable
     protected Type      returnType;
 
     // - compiled
+    protected Dialect dialect;
+    protected QualifiedName qualifiedTableName;
     protected String query;
     protected String update;
     protected Class returnClass;
@@ -172,8 +178,9 @@ implements PersistentIdentifierGenerator, Configurable
 
 
 
-
-    public void configure (Type type, Properties params, Dialect dialect) {
+    @Override
+    public void configure (Type type, Properties params, JdbcEnvironment jdbcEnv) {
+        this.dialect = jdbcEnv.getDialect();
         ObjectNameNormalizer normalizer = (ObjectNameNormalizer) params.get( IDENTIFIER_NORMALIZER);
 
         this.tableName =        ConfigurationHelper.getString( ALLOC_TABLE, params, DEFAULT_TABLE);
@@ -193,13 +200,14 @@ implements PersistentIdentifierGenerator, Configurable
         }
 
 
-        // qualify Table Name, if necessary;
+        // determine TableName;  qualified & dialect-specific, if necessary.
         //      --
-        if (tableName.indexOf( '.') < 0) {
-            String schemaName = normalizer.normalizeIdentifierQuoting( params.getProperty( SCHEMA));
-            String catalogName = normalizer.normalizeIdentifierQuoting( params.getProperty( CATALOG));
-            this.tableName = Table.qualify( catalogName, schemaName, tableName);
-        }
+        this.qualifiedTableName = QualifiedNameParser.INSTANCE.parse(
+                tableName, 
+                normalizer.normalizeIdentifierQuoting( params.getProperty( CATALOG )),
+                normalizer.normalizeIdentifierQuoting( params.getProperty( SCHEMA ))
+        );
+        this.tableName = jdbcEnv.getQualifiedObjectNameFormatter().format( qualifiedTableName, dialect);
 
         // build SQL strings;
         //      -- use appendLockHint(LockMode) for now, as that is how Hibernate's generators do it.
@@ -222,6 +230,42 @@ implements PersistentIdentifierGenerator, Configurable
         // done.
     }
 
+    
+    
+    @Override
+    public void registerExportables (Database database) {
+        final Dialect dialect = database.getJdbcEnvironment().getDialect();
+
+        final Schema schema = database.locateSchema(
+                qualifiedTableName.getCatalogName(),
+                qualifiedTableName.getSchemaName()
+        );
+        final Table table = schema.createTable( qualifiedTableName.getObjectName(), false);
+
+        final Column segmentColumn = new ExportableColumn(
+                database,
+                table,
+                sequenceColumn,
+                StringType.INSTANCE,
+                dialect.getTypeName( Types.VARCHAR, DEFAULT_SEQUENCE_COLUMNLENGTH, 0, 0)
+        );
+        segmentColumn.setNullable( false);
+        table.addColumn( segmentColumn);
+
+        // REVIEW -- awkward Hibernate API to export Primary Key,  may be subject to change..
+        table.setPrimaryKey( new PrimaryKey());
+        table.getPrimaryKey().setTable( table);
+        table.getPrimaryKey().addColumn( segmentColumn);
+
+        final Column valueColumn = new ExportableColumn(
+                database,
+                table,
+                allocColumn,
+                LongType.INSTANCE
+        );
+        table.addColumn( valueColumn);
+    }
+    
 
     // ----------------------------------------------------------------------------------
 
@@ -283,15 +327,17 @@ implements PersistentIdentifierGenerator, Configurable
                     try {
                         qps.setString( 1, sequenceName);
                         ResultSet rs = qps.executeQuery();
-                        if (!rs.next()) {
-                            String err = "could not read a hi value - you need to populate the table: " + tableName + ", " + sequenceName;
-                            log.error( err);
-                            throw new IdentifierGenerationException( err);
+                        if (rs.next()) {
+                            // Read Value;
+                            result = rs.getLong( 1);
+                        } else {
+                            // Initialize;  no existing value present.
+                            //      -- previously used to do this in the "Create Strings", but Hibernate has removed that capability. duh.
+                            result = initializeAllocatorValue( session, conn, statementLogger);
                         }
-                        result = rs.getLong( 1);
                         rs.close();
                     } catch (SQLException sqle) {
-                        log.error( "could not read a hi value", sqle);
+                        log.error( "could not read/ or initialize a hi value", sqle);
                         throw sqle;
                     } finally {
                         qps.close();
@@ -328,6 +374,46 @@ implements PersistentIdentifierGenerator, Configurable
     }
 
 
+    
+    // initialize Allocator Value;      
+    //      -- called when no existing Value found;
+    //      -- insert (SequenceName, StartValue) into Allocator Table.
+    //
+    protected long initializeAllocatorValue (SessionImplementor session, Connection conn, SqlStatementLogger statementLogger) throws SQLException {
+        SessionEventListenerManager statsCollector = session.getEventListenerManager();
+        
+        String insertSql = "insert into " + tableName + "("+dialect.quote(sequenceColumn)+","+dialect.quote(allocColumn)+") values (?, ?)";
+        long startValue = blockSize;
+
+        // prepare statement;
+        //
+        PreparedStatement insertPS;
+        statementLogger.logStatement( insertSql, FormatStyle.BASIC.getFormatter());
+        try {
+            statsCollector.jdbcPrepareStatementStart();
+            insertPS = conn.prepareStatement( insertSql);
+        } finally {
+            statsCollector.jdbcPrepareStatementEnd();
+        }
+        
+        // execute statement;
+        //      --
+        try {
+            insertPS.setString( 1, sequenceName);
+            insertPS.setLong( 2, startValue);
+            try {
+                statsCollector.jdbcExecuteStatementStart();
+                insertPS.executeUpdate();
+            } finally {
+                statsCollector.jdbcExecuteStatementEnd();
+            }
+        } finally {
+            insertPS.close();
+        }
+        
+        // done;  return Start Value.
+        return startValue;
+    }
 
 
     // ----------------------------------------------------------------------------------
@@ -336,7 +422,8 @@ implements PersistentIdentifierGenerator, Configurable
 
 
 
-
+    // OUTGOING -- obsolete;  Hibernate 5 no longer uses these SPIs/ or allows Allocator Rows to be created statically.  sigh.
+    @Deprecated
     public String[] sqlCreateStrings (Dialect dialect) throws HibernateException 
     {
         // create Sequence Table
@@ -354,6 +441,7 @@ implements PersistentIdentifierGenerator, Configurable
         return new String[]{ tableStr, valueStr};
     }
 
+    @Deprecated
     public String[] sqlDropStrings (Dialect dialect) {
 
         // delete Row for this Sequence.
@@ -383,6 +471,8 @@ implements PersistentIdentifierGenerator, Configurable
     public long getStats_TableAccessCount() {
         return statisticsTableAccessCount;
     }
+
+
 
 
 
