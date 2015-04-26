@@ -14,6 +14,17 @@ Allocation using the "linear block" algorithm, can be understood as allocating b
 
 Compared to HiLo, "linear block allocation" treats keyspace as the linear number-line it fundamentally is, rather than breaking it into a two-dimensional keyspace (the separate "hi" & "lo" words). Keeping NEXT_VAL the same type & magnitude as the actual keys simplifies maintenance, reduces multiplication to simple addition, and removes unnecessary complexity. There is no performance advantage or any other benefit to justify HiLo's more complicated number-space & design; it is merely a flawed concept rejected by Occam's razor.
 
+Maven Dependency
+--------
+
+Add the Maven dependency to your project, or download and add the JAR.
+
+    <dependency>
+      <groupId>com.literatejava</groupId>
+      <artifactId>linear-block-allocator</artifactId>
+      <version>3.6.10</version>
+    </dependency>
+
 Usage & Configuration
 --------
 
